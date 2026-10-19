@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MBTI 人格测试 · 你是哪一种人？</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{min-height:100%}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    background:#080a14;color:#eef1ff;overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+
+  /* ---------- 背景光斑 ---------- */
+  .blob{position:fixed;border-radius:50%;filter:blur(90px);pointer-events:none;z-index:0;opacity:.55}
+  .blob1{width:620px;height:620px;background:radial-gradient(circle,#7c5cff,transparent 70%);top:-240px;left:-160px;animation:float1 20s ease-in-out infinite}
+  .blob2{width:560px;height:560px;background:radial-gradient(circle,#ff5c9d,transparent 70%);bottom:-260px;right:-140px;animation:float2 24s ease-in-out infinite}
+  .blob3{width:420px;height:420px;background:radial-gradient(circle,#2dd4bf,transparent 70%);top:45%;right:18%;opacity:.28;animation:float1 28s ease-in-out infinite reverse}
+  @keyframes float1{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(60px,50px) scale(1.12)}}
+  @keyframes float2{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-70px,-40px) scale(1.1)}}
+
+  /* ---------- 布局 ---------- */
+  main{position:relative;z-index:1;display:flex;min-height:100vh;padding:48px 20px;overflow-y:auto}
+  .screen{display:none;margin:auto;width:100%;max-width:760px;flex:0 0 auto}
+  .screen.active{display:block;animation:screenIn .55s cubic-bezier(.2,.8,.2,1)}
+  @keyframes screenIn{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+
+  /* ---------- 首页 ---------- */
+  .intro{text-align:center}
+  .eyebrow{
+    display:inline-flex;align-items:center;gap:8px;padding:7px 16px;border-radius:999px;
+    background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.12);
+    font-size:13px;color:#b9c0e0;letter-spacing:.6px;
+  }
+  .dot-live{width:6px;height:6px;border-radius:50%;background:#4ade80;box-shadow:0 0 10px #4ade80;animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  h1.title{font-size:clamp(32px,6.4vw,58px);line-height:1.14;margin:26px 0 20px;font-weight:800;letter-spacing:-1.2px}
+  .grad{background:linear-gradient(100deg,#8b7cff,#ff6bb5 58%,#ffb86b);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .lead{color:#98a1c6;font-size:16px;line-height:1.85;max-width:520px;margin:0 auto 34px}
+  .lead b{color:#dfe3f5;font-weight:600}
+
+  .type-strip{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:580px;margin:0 auto 14px}
+  .type-pill{
+    padding:7px 13px;border-radius:10px;font-size:12.5px;letter-spacing:1.2px;font-weight:800;
+    color:#8f99c4;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
+    transition:.28s cubic-bezier(.2,.8,.2,1);cursor:pointer;font-family:inherit;
+  }
+  .type-pill:hover{color:#fff;transform:translateY(-3px);background:rgba(124,92,255,.2);border-color:rgba(124,92,255,.5)}
+  .strip-hint{font-size:12.5px;color:#6b7499;margin-bottom:34px;letter-spacing:.3px}
+
+  .btn-primary{
+    position:relative;border:none;cursor:pointer;font-family:inherit;
+    padding:17px 48px;border-radius:999px;font-size:16px;font-weight:700;color:#fff;
+    background:linear-gradient(100deg,#7c5cff,#ff5c9d);
+    box-shadow:0 14px 44px -12px rgba(124,92,255,.95);
+    transition:transform .22s,box-shadow .22s;
+  }
+  .btn-primary:hover{transform:translateY(-3px);box-shadow:0 20px 54px -14px rgba(255,92,157,.95)}
+  .btn-primary:active{transform:translateY(-1px) scale(.99)}
+  .hint{margin-top:18px;font-size:12.5px;color:#6b7499;letter-spacing:.4px}
+  .hint kbd{
+    background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);
+    border-radius:5px;padding:1px 6px;font-family:inherit;font-size:11.5px;color:#b6bdd9;
+  }
+
+  /* ---------- 答题 ---------- */
+  .quiz-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+  .counter{font-size:13px;color:#8f99c4;font-variant-numeric:tabular-nums}
+  .counter b{color:#fff;font-size:16px;font-weight:800}
+  .back-btn{
+    background:none;border:none;font-family:inherit;cursor:pointer;
+    color:#8f99c4;font-size:13.5px;padding:6px 12px;border-radius:9px;transition:.2s;
+  }
+  .back-btn:hover{color:#fff;background:rgba(255,255,255,.07)}
+  .back-btn:disabled{opacity:.22;cursor:default;background:none;color:#8f99c4}
+
+  .progress{height:6px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;margin-bottom:26px}
+  .progress-fill{
+    height:100%;width:0;border-radius:99px;
+    background:linear-gradient(90deg,#7c5cff,#ff5c9d);
+    box-shadow:0 0 18px rgba(124,92,255,.85);
+    transition:width .55s cubic-bezier(.2,.8,.2,1);
+  }
+
+  .q-card{
+    background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.1);
+    border-radius:26px;padding:38px 34px 30px;
+    backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);
+    box-shadow:0 34px 90px -46px rgba(0,0,0,.95);
+  }
+  .q-kicker{font-size:11.5px;letter-spacing:2.4px;color:#7c85b0;margin-bottom:14px;font-weight:600}
+  .q-text{font-size:clamp(19px,2.7vw,25px);line-height:1.62;font-weight:700;margin-bottom:28px;letter-spacing:-.2px}
+
+  .options{display:flex;flex-direction:column;gap:12px}
+  .option{
+    display:flex;align-items:center;gap:16px;text-align:left;width:100%;
+    padding:18px 20px;border-radius:16px;cursor:pointer;font-family:inherit;
+    background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.09);
+    color:#dfe3f5;font-size:15.5px;line-height:1.55;
+    transition:all .22s cubic-bezier(.2,.8,.2,1);
+  }
+  .option:hover{background:rgba(124,92,255,.15);border-color:rgba(124,92,255,.6);transform:translateX(5px);color:#fff}
+  .opt-badge{
+    flex:0 0 34px;height:34px;border-radius:10px;display:grid;place-items:center;
+    font-weight:800;font-size:14px;color:#a9b2d8;
+    background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);transition:.22s;
+  }
+  .option:hover .opt-badge{background:linear-gradient(135deg,#7c5cff,#ff5c9d);color:#fff;border-color:transparent}
+  .option.chosen{
+    background:linear-gradient(100deg,rgba(124,92,255,.32),rgba(255,92,157,.22));
+    border-color:rgba(160,140,255,.85);transform:translateX(5px);color:#fff;
+  }
+  .option.chosen .opt-badge{background:linear-gradient(135deg,#7c5cff,#ff5c9d);color:#fff;border-color:transparent}
+
+  /* ---------- 结果 / 详情 ---------- */
+  .result-wrap{--c1:#a78bfa;--c2:#6366f1}
+  .result-hero{text-align:center;margin-bottom:34px}
+  .type-code{
+    font-size:clamp(50px,11vw,90px);font-weight:900;letter-spacing:8px;line-height:1;
+    background:linear-gradient(100deg,var(--c1),var(--c2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:drop-shadow(0 12px 44px rgba(124,92,255,.5));
+    padding-left:8px;
+  }
+  .type-name{font-size:25px;font-weight:800;margin-top:14px;letter-spacing:.5px}
+  .type-tagline{color:#98a1c6;margin-top:12px;font-size:15px;line-height:1.75;max-width:560px;margin-left:auto;margin-right:auto}
+
+  .panel{
+    background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.1);
+    border-radius:20px;padding:24px;
+    backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  }
+  .panel h3{
+    font-size:13px;letter-spacing:2px;color:#8f99c4;font-weight:700;margin-bottom:16px;
+    display:flex;align-items:center;gap:8px;
+  }
+  .panel h3::before{content:'';width:3px;height:13px;border-radius:2px;background:linear-gradient(180deg,var(--c1),var(--c2))}
+
+  .result-wrap .panel{margin-bottom:16px}
+
+  .desc-text{color:#b6bdd9;font-size:15px;line-height:1.9}
+
+  .dim{margin-bottom:20px}
+  .dim:last-child{margin-bottom:0}
+  .dim-labels{display:flex;justify-content:space-between;font-size:13px;margin-bottom:9px;color:#8f99c4;gap:12px}
+  .dim-labels .win{color:#fff;font-weight:700}
+  .dim-track{height:10px;border-radius:99px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{
+    padding:7px 14px;border-radius:10px;font-size:13px;
+    background:rgba(124,92,255,.14);border:1px solid rgba(124,92,255,.3);color:#c6c0ff;
+  }
+  .chip.green{background:rgba(52,211,153,.12);border-color:rgba(52,211,153,.32);color:#8ef0c8}
+  .chip.amber{background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.32);color:#ffd68a}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:640px){.grid2{grid-template-columns:1fr}}
+
+  ul.clean{list-style:none;display:flex;flex-direction:column;gap:11px}
+  ul.clean li{position:relative;padding-left:22px;color:#b6bdd9;font-size:14.5px;line-height:1.65}
+  ul.clean li::before{
+    content:'';position:absolute;left:5px;top:9px;width:6px;height:6px;border-radius:50%;
+    background:var(--c1);box-shadow:0 0 8px var(--c1);
+  }
+  ul.clean.warn li::before{background:#ff8f6b;box-shadow:0 0 8px #ff8f6b}
+
+  .actions{display:flex;gap:12px;justify-content:center;margin-top:30px;flex-wrap:wrap}
+  .btn-ghost{
+    padding:15px 36px;border-radius:999px;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;
+    background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.16);color:#cfd5ee;
+    transition:.22s;
+  }
+  .btn-ghost:hover{background:rgba(255,255,255,.1);color:#fff;transform:translateY(-2px)}
+
+  /* ---------- 人格图鉴 ---------- */
+  .types-top{display:flex;justify-content:flex-start;margin-bottom:6px}
+  .types-head{text-align:center;margin-bottom:30px}
+  .types-head h2{font-size:clamp(24px,4.4vw,34px);font-weight:800;letter-spacing:-.6px;margin-bottom:10px}
+  .types-head p{color:#98a1c6;font-size:14.5px}
+
+  .type-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px}
+  .type-card{
+    display:flex;flex-direction:column;text-align:left;cursor:pointer;font-family:inherit;
+    background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.1);
+    border-radius:18px;padding:20px 18px;
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    transition:.26s cubic-bezier(.2,.8,.2,1);
+  }
+  .type-card:hover{
+    transform:translateY(-5px);background:rgba(124,92,255,.14);
+    border-color:rgba(160,140,255,.65);
+    box-shadow:0 20px 44px -26px rgba(124,92,255,.95);
+  }
+  .type-card .code{
+    font-size:23px;font-weight:900;letter-spacing:2.5px;line-height:1.1;
+    background:linear-gradient(100deg,var(--c1),var(--c2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .type-card .nm{font-size:14px;font-weight:700;margin-top:9px;color:#dfe3f5}
+  .type-card .tg{
+    font-size:12px;color:#8f99c4;margin-top:6px;line-height:1.55;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+  }
+
+  ::selection{background:rgba(124,92,255,.5)}
+</style>
+</head>
+<body>
+
+<div class="blob blob1"></div>
+<div class="blob blob2"></div>
+<div class="blob blob3"></div>
+
+<main>
+  <!-- 首页 -->
+  <section class="screen active" id="screen-intro">
+    <div class="intro">
+      <div class="eyebrow"><span class="dot-live"></span>16 型人格 · 免费测试</div>
+      <h1 class="title">你是 <span class="grad">哪一种</span> 人？</h1>
+      <p class="lead">20 道题，找到属于你的 MBTI 人格类型。<br>约需 <b>3 分钟</b>，请凭第一直觉作答，没有对错之分。</p>
+      <div class="type-strip" id="typeStrip"></div>
+      <p class="strip-hint">👆 点击任意类型，查看它的详细描述与特点</p>
+      <button class="btn-primary" id="startBtn">开始测试 →</button>
+      <p class="hint">答题时可按 <kbd>1</kbd> <kbd>2</kbd> 键快速选择</p>
+    </div>
+  </section>
+
+  <!-- 答题 -->
+  <section class="screen" id="screen-quiz">
+    <div class="quiz-top">
+      <button class="back-btn" id="backBtn">← 上一题</button>
+      <div class="counter"><b id="qIndex">1</b> / 20</div>
+    </div>
+    <div class="progress"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="q-card">
+      <p class="q-kicker">第 <span id="qNo">1</span> 题</p>
+      <h2 class="q-text" id="qText"></h2>
+      <div class="options" id="options"></div>
+    </div>
+  </section>
+
+  <!-- 结果 -->
+  <section class="screen" id="screen-result">
+    <div class="result-wrap" id="resultWrap"></div>
+  </section>
+
+  <!-- 人格图鉴 -->
+  <section class="screen" id="screen-types">
+    <div class="types-top">
+      <button class="back-btn" id="typesBackBtn">← 返回首页</button>
+    </div>
+    <div class="types-head">
+      <h2>16 型人格图鉴</h2>
+      <p>点击任意人格，查看它的描述与特点</p>
+    </div>
+    <div class="type-grid" id="typeGrid"></div>
+  </section>
+
+  <!-- 人格详情 -->
+  <section class="screen" id="screen-detail">
+    <div class="types-top">
+      <button class="back-btn" id="detailBackBtn">← 返回</button>
+    </div>
+    <div class="result-wrap" id="detailWrap"></div>
+  </section>
+</main>
+
+<script>
+/* =========================================================
+   题库
+   ========================================================= */
+const BANKS = {
+  EI: [
+    ['在热闹的聚会上，你通常会…', '主动去认识陌生的面孔，越聊越有精神', '和几个熟悉的朋友待在一起，觉得更自在'],
+    ['连续社交一整天之后，你会…', '依然兴奋，还想再约下一场', '感到疲惫，需要独处来恢复能量'],
+    ['遇到一个棘手的问题时，你更倾向于…', '找人聊一聊，边说边理清思路', '先自己安静地想清楚，再决定要不要说'],
+    ['你理想中的周末是…', '和朋友出去逛街、吃饭、看展', '待在家里看书、追剧、做自己的事'],
+    ['在会议或课堂上，你更可能是…', '想到什么就举手发言', '先听完大家的意见，再谨慎表达']
+  ],
+  SN: [
+    ['你更愿意相信…', '亲身经历与确凿的事实', '直觉与突如其来的灵感'],
+    ['学习新东西时，你更喜欢…', '具体步骤和大量实例', '整体概念和背后的原理'],
+    ['你更容易注意到…', '眼前事物的细节', '未来可能发生的变化'],
+    ['别人更可能这样评价你…', '务实、靠谱', '有想象力、脑洞大'],
+    ['看完一部电影，你更关注…', '情节是否合乎逻辑', '它想表达的寓意与隐喻']
+  ],
+  TF: [
+    ['做重要决定时，你更看重…', '逻辑推演与客观事实', '内心感受与他人的处境'],
+    ['朋友向你倾诉烦恼，你会先…', '帮他分析问题出在哪里', '安慰他的情绪，让他好受一点'],
+    ['你更希望别人这样形容你…', '公正、理性', '温暖、体贴'],
+    ['面对冲突时，你倾向于…', '就事论事，把是非说清楚', '先顾全关系，别撕破脸'],
+    ['你认为更重要的是…', '真相', '和谐']
+  ],
+  JP: [
+    ['你更喜欢…', '提前把计划安排得明明白白', '随机应变，走到哪算哪'],
+    ['你的书桌通常是…', '整洁有序，东西各归其位', '有点乱，但我知道东西在哪'],
+    ['面对截止日期，你通常…', '提前完成，留出余量', '最后冲刺，爆发力惊人'],
+    ['出门旅行时，你更倾向于…', '制定详细的行程表', '大概定个方向就出发'],
+    ['未完成的事情会让你…', '心里发慌，必须尽快搞定', '觉得还有时间，不急']
+  ]
+};
+
+const DIMS = { EI:{a:'E',b:'I'}, SN:{a:'S',b:'N'}, TF:{a:'T',b:'F'}, JP:{a:'J',b:'P'} };
+
+const SEQ = ['EI','SN','TF','JP','SN','JP','EI','TF','TF','EI','JP','SN','JP','TF','SN','EI','EI','SN','TF','JP'];
+
+const QUESTIONS = (() => {
+  const c = { EI:0, SN:0, TF:0, JP:0 };
+  return SEQ.map(dim => {
+    const b = BANKS[dim][c[dim]++];
+    return { dim, text:b[0], a:b[1], b:b[2], aVal:DIMS[dim].a, bVal:DIMS[dim].b };
+  });
+})();
+
+const TOTAL = QUESTIONS.length;
+
+/* =========================================================
+   16 型人格资料
+   ========================================================= */
+const TYPES = {
+  INTJ:{ name:'建筑师', tagline:'富有想象力和战略性的思想家，一切皆在计划之中。',
+    desc:'你拥有罕见的独立与远见，习惯用长期视角审视世界。表面上冷静克制，内心却燃烧着对知识与效率的追求。你不满足于"大家都这么做"，而是执着于找到那个最优解。',
+    traits:['战略思维','独立自主','长期主义','洞察本质'],
+    strengths:['善于从复杂信息中提炼规律','目标明确，执行力强','不受权威束缚，敢于创新'],
+    weaknesses:['容易显得冷漠疏离','对低效与重复零容忍','过度自信，不轻易表露情感'],
+    careers:['战略咨询','数据科学','产品架构','科研','投资分析'],
+    match:['ENFP','ENTP'] },
+
+  INTP:{ name:'逻辑学家', tagline:'具有创造力的发明家，对知识有着止不住的渴望。',
+    desc:'你的大脑是一台永不停歇的思考机器。你享受拆解概念、寻找逻辑漏洞的过程，比起结论，你更迷恋推理本身带来的乐趣。',
+    traits:['逻辑严谨','好奇求知','独立','灵活'],
+    strengths:['分析问题一针见血','思维开阔，不受成见束缚','擅长抽象与系统性思考'],
+    weaknesses:['想得多、做得少','对细节和期限不够上心','情感表达不够主动'],
+    careers:['算法工程','研究员','系统设计','哲学/写作','技术顾问'],
+    match:['ENTJ','ESTJ'] },
+
+  ENTJ:{ name:'指挥官', tagline:'大胆、富有想象力且意志强大的领导者，总能找到或创造解决方法。',
+    desc:'你天生带着方向感，遇到混乱时第一反应是"怎么解决"。你享受挑战，也乐于把一群人组织成一台高效运转的机器。',
+    traits:['决断力强','目标导向','自信','组织力'],
+    strengths:['能把想法迅速转化为行动计划','抗压能力极强','擅长调动资源与人'],
+    weaknesses:['有时过于强势','容易忽略他人情绪','对"慢"缺乏耐心'],
+    careers:['企业管理','创业','项目总监','投资银行','商务谈判'],
+    match:['INTP','INFP'] },
+
+  ENTP:{ name:'辩论家', tagline:'聪明好奇的思想者，不会放弃任何智力上的挑战。',
+    desc:'你喜欢把想法抛来抛去，享受观点碰撞的火花。规则对你来说更像是一个可以商量的建议，而不是必须遵守的铁律。',
+    traits:['思维敏捷','善辩','创意十足','适应力强'],
+    strengths:['快速抓住问题核心','点子多，善变通','在变化中如鱼得水'],
+    weaknesses:['容易三分钟热度','对收尾工作缺乏耐心','有时为了辩论而辩论'],
+    careers:['创业','市场策划','咨询顾问','产品经理','媒体内容'],
+    match:['INFJ','INTJ'] },
+
+  INFJ:{ name:'提倡者', tagline:'安静而神秘，同时鼓舞人心且不知疲倦的理想主义者。',
+    desc:'你看似温和，内心却有一套坚定的价值标准。你敏锐地感知他人的情绪，也常常为了"世界应该更好"而默默努力。',
+    traits:['共情力强','理想主义','洞察人心','坚韧'],
+    strengths:['能理解他人未说出口的需要','对意义感有极强的追求','善于进行深度沟通'],
+    weaknesses:['容易过度消耗自己','完美主义导致拖延','不擅长拒绝别人'],
+    careers:['心理咨询','教育','公益组织','内容创作','人力资源'],
+    match:['ENFP','ENTP'] },
+
+  INFP:{ name:'调停者', tagline:'诗意、善良的利他主义者，总是热情地为正当理由提供帮助。',
+    desc:'你的内心世界丰富得像一片森林。你在意真实与善意，愿意为喜欢的人和事付出全部的温柔。',
+    traits:['温柔','富有想象力','重视价值','敏感细腻'],
+    strengths:['善于理解复杂的情感','创造力与表达力强','忠于自己的信念'],
+    weaknesses:['容易内耗与自我怀疑','面对冲突倾向回避','计划性不足'],
+    careers:['写作/编辑','插画设计','心理咨询','社会工作','品牌文案'],
+    match:['ENFJ','ENTJ'] },
+
+  ENFJ:{ name:'主人公', tagline:'富有魅力鼓舞人心的领导者，有使听众着迷的能力。',
+    desc:'你天然地关注他人的成长，并乐在其中。你能让一群人相信自己可以做到，并愿意为此付出真心。',
+    traits:['感染力强','利他','善于协调','有远见'],
+    strengths:['擅长激励和团结他人','沟通表达出色','对他人需求高度敏感'],
+    weaknesses:['容易背负他人的情绪','太在意别人的评价','常常忽视自己的需要'],
+    careers:['教育培训','人力资源','公关传播','团队管理','主持'],
+    match:['INFP','ISFP'] },
+
+  ENFP:{ name:'竞选者', tagline:'热情、有创造力、爱社交的自由灵魂，总能找到理由微笑。',
+    desc:'你对世界永远保持着新鲜感，容易被新的想法点燃，也乐于把这份热情传递给身边的每一个人。',
+    traits:['热情','好奇','富有创意','共情'],
+    strengths:['快速与人建立连接','点子层出不穷','适应变化能力强'],
+    weaknesses:['容易分心','不喜欢重复与约束','情绪起伏较大'],
+    careers:['市场营销','内容创作','活动策划','心理咨询','创业'],
+    match:['INFJ','INTJ'] },
+
+  ISTJ:{ name:'物流师', tagline:'实际且注重事实的个人，可靠性不容怀疑。',
+    desc:'你说到做到，重视秩序与责任。在别人慌乱的时候，你往往是那个把事情稳稳推进的人。',
+    traits:['可靠','严谨','有责任感','务实'],
+    strengths:['执行力强且极其稳定','注重细节，很少出错','守信用，值得托付'],
+    weaknesses:['不太适应突如其来的变化','对情感表达不够敏感','容易固守旧方法'],
+    careers:['财务审计','法务','行政管理','工程制造','数据分析'],
+    match:['ESFP','ESTP'] },
+
+  ISFJ:{ name:'守卫者', tagline:'非常专注而温暖的守护者，时刻准备保护爱着的人们。',
+    desc:'你记得别人随口提过的小事，也愿意默默把一切安排妥当。你的温柔是具体的、有行动力的。',
+    traits:['体贴','细心','忠诚','踏实'],
+    strengths:['关注细节，照顾周全','值得信赖，有始有终','善于营造安全感'],
+    weaknesses:['不善于表达自己的需求','容易委屈自己','对变化略感不安'],
+    careers:['护理/医疗','教师','行政人事','客户服务','设计'],
+    match:['ESTP','ESFP'] },
+
+  ESTJ:{ name:'总经理', tagline:'出色的管理者，在管理事情或人的方面无与伦比。',
+    desc:'你相信秩序和规则能带来效率。你擅长把混乱的局面理成清晰的流程，并推动它真正落地。',
+    traits:['组织力强','直接','负责','高效'],
+    strengths:['擅长时间与资源管理','决策果断','标准清晰，执行有力'],
+    weaknesses:['有时过于固执','对他人感受不够敏感','不喜欢模糊地带'],
+    careers:['运营管理','项目管理','销售总监','公共事务','供应链'],
+    match:['INTP','ISFP'] },
+
+  ESFJ:{ name:'执政官', tagline:'极有同情心、爱交往、受欢迎的人们，总是热心提供帮助。',
+    desc:'你在人群中像一股暖流，擅长让每个人都感到被照顾。你在意关系的和谐，并愿意为此付出实际行动。',
+    traits:['热心','善于社交','有责任心','重感情'],
+    strengths:['组织活动和照顾他人的能力出众','善于维护关系网络','执行细致周到'],
+    weaknesses:['过度在意他人评价','很难开口拒绝','对批评比较敏感'],
+    careers:['人力资源','客户成功','教育','活动运营','护理'],
+    match:['ISFP','ISTP'] },
+
+  ISTP:{ name:'鉴赏家', tagline:'大胆而实际的实验家，擅长使用任何形式的工具。',
+    desc:'你喜欢动手，也喜欢在真实的场景里解决问题。理论说得再多，不如实际操作一遍来得痛快。',
+    traits:['冷静','动手能力强','灵活','独立'],
+    strengths:['危机中保持冷静','学习实操技能极快','不墨守成规'],
+    weaknesses:['不擅长长期规划','情感表达较少','容易对重复工作厌倦'],
+    careers:['工程师','技术专家','飞行/机械','运动教练','应急响应'],
+    match:['ESFJ','ENFJ'] },
+
+  ISFP:{ name:'探险家', tagline:'灵活有魅力的艺术家，时刻准备探索和体验新鲜事物。',
+    desc:'你对美和感受有天然的敏锐，喜欢用行动而非语言表达自己。你活在当下，也尊重自己的内心节奏。',
+    traits:['有审美','随性','温和','真诚'],
+    strengths:['审美与感知力强','待人真诚，不轻易评判','适应力好'],
+    weaknesses:['回避冲突','计划性较弱','容易受情绪影响'],
+    careers:['设计','摄影','手工艺','餐饮烘焙','音乐'],
+    match:['ESTJ','ESFJ'] },
+
+  ESTP:{ name:'企业家', tagline:'聪明、精力充沛、善于感知的人，真心享受生活在边缘。',
+    desc:'你反应快、胆子大，喜欢在真实世界里试错。比起纸上谈兵，你更愿意先做起来再说。',
+    traits:['行动力强','善于应变','有胆识','擅长社交'],
+    strengths:['快速抓住机会','临场反应出色','抗压能力强'],
+    weaknesses:['容易冲动决策','缺乏长期耐心','容易忽略细节'],
+    careers:['销售','创业','市场拓展','体育竞技','危机公关'],
+    match:['ISFJ','ISTJ'] },
+
+  ESFP:{ name:'表演者', tagline:'自发的、精力充沛而热情的表演者——生活在他们周围永不无聊。',
+    desc:'你天生会点亮气氛，喜欢真实的体验和当下的快乐。你关心身边的人，也懂得如何享受生活。',
+    traits:['热情','活泼','善于共情','爱新鲜'],
+    strengths:['带动气氛的天赋','对他人情绪敏感','行动迅速果断'],
+    weaknesses:['难以长期专注','不喜欢规划和约束','容易冲动消费'],
+    careers:['演艺/主持','活动策划','销售','旅行内容','美妆时尚'],
+    match:['ISTJ','ISFJ'] }
+};
+
+const ALL_TYPES = ['INTJ','INTP','ENTJ','ENTP','INFJ','INFP','ENFJ','ENFP',
+                   'ISTJ','ISFJ','ESTJ','ESFJ','ISTP','ISFP','ESTP','ESFP'];
+
+const GROUP = {
+  nt:{ c1:'#a78bfa', c2:'#6366f1' },
+  nf:{ c1:'#6ee7b7', c2:'#0ea5e9' },
+  sj:{ c1:'#7dd3fc', c2:'#3b82f6' },
+  sp:{ c1:'#fcd34d', c2:'#f97316' }
+};
+const GROUP_KEY = {
+  INTJ:'nt', INTP:'nt', ENTJ:'nt', ENTP:'nt',
+  INFJ:'nf', INFP:'nf', ENFJ:'nf', ENFP:'nf',
+  ISTJ:'sj', ISFJ:'sj', ESTJ:'sj', ESFJ:'sj',
+  ISTP:'sp', ISFP:'sp', ESTP:'sp', ESFP:'sp'
+};
+
+/* =========================================================
+   状态与元素
+   ========================================================= */
+const state = { i:0, answers:new Array(TOTAL).fill(null), locked:false };
+let detailFrom = 'intro';   // 记录从哪个页面进入详情
+
+const el = id => document.getElementById(id);
+const screens = {
+  intro : el('screen-intro'),
+  quiz  : el('screen-quiz'),
+  result: el('screen-result'),
+  types : el('screen-types'),
+  detail: el('screen-detail')
+};
+
+const qText = el('qText'), qNo = el('qNo'), qIndex = el('qIndex');
+const optionsBox = el('options'), progressFill = el('progressFill'), backBtn = el('backBtn');
+
+/* =========================================================
+   首页类型胶囊（可点击）
+   ========================================================= */
+(function renderStrip(){
+  el('typeStrip').innerHTML = ALL_TYPES
+    .map(t => `<button type="button" class="type-pill" data-type="${t}">${t}</button>`)
+    .join('');
+})();
+
+el('typeStrip').addEventListener('click', e => {
+  const btn = e.target.closest('.type-pill');
+  if (!btn) return;
+  openDetail(btn.dataset.type, 'intro');
+});
+
+/* =========================================================
+   人格图鉴
+   ========================================================= */
+(function renderTypeGrid(){
+  el('typeGrid').innerHTML = ALL_TYPES.map(t => {
+    const info = TYPES[t];
+    const g = GROUP[GROUP_KEY[t]];
+    return `
+      <button type="button" class="type-card" data-type="${t}" style="--c1:${g.c1};--c2:${g.c2}">
+        <span class="code">${t}</span>
+        <span class="nm">${info.name}</span>
+        <span class="tg">${info.tagline}</span>
+      </button>`;
+  }).join('');
+})();
+
+el('typeGrid').addEventListener('click', e => {
+  const card = e.target.closest('.type-card');
+  if (!card) return;
+  openDetail(card.dataset.type, 'types');
+});
+
+el('typesBackBtn').addEventListener('click', () => show('intro'));
+el('detailBackBtn').addEventListener('click', () => show(detailFrom));
+
+/* =========================================================
+   通用内容片段：人格详细面板
+   ========================================================= */
+function typePanelHTML(info, aboutTitle){
+  return `
+    <div class="panel">
+      <h3>${aboutTitle}</h3>
+      <p class="desc-text">${info.desc}</p>
+    </div>
+
+    <div class="panel">
+      <h3>核心特质</h3>
+      <div class="chips">
+        ${info.traits.map(t => `<span class="chip">${t}</span>`).join('')}
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="panel" style="margin-bottom:16px">
+        <h3>你的优势</h3>
+        <ul class="clean">
+          ${info.strengths.map(s => `<li>${s}</li>`).join('')}
+        </ul>
+      </div>
+      <div class="panel" style="margin-bottom:16px">
+        <h3>可能的盲区</h3>
+        <ul class="clean warn">
+          ${info.weaknesses.map(s => `<li>${s}</li>`).join('')}
+        </ul>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>适合的职业方向</h3>
+      <div class="chips">
+        ${info.careers.map(c => `<span class="chip green">${c}</span>`).join('')}
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>天生合拍的类型</h3>
+      <div class="chips">
+        ${info.match.map(m => `<span class="chip amber">${m}</span>`).join('')}
+      </div>
+    </div>
+  `;
+}
+
+/* =========================================================
+   详情页渲染
+   ========================================================= */
+function openDetail(code, from){
+  detailFrom = from;
+  renderTypeDetail(code);
+  el('detailBackBtn').textContent =
+    from === 'types'  ? '← 返回图鉴' :
+    from === 'result' ? '← 返回我的结果' : '← 返回首页';
+  show('detail');
+}
+
+function renderTypeDetail(code){
+  const info = TYPES[code];
+  const g = GROUP[GROUP_KEY[code]];
+  const wrap = el('detailWrap');
+
+  wrap.style.setProperty('--c1', g.c1);
+  wrap.style.setProperty('--c2', g.c2);
+
+  wrap.innerHTML = `
+    <div class="result-hero">
+      <div class="type-code">${code}</div>
+      <div class="type-name">${info.name}</div>
+      <p class="type-tagline">${info.tagline}</p>
+    </div>
+
+    ${typePanelHTML(info, '关于这种人格')}
+
+    <div class="actions">
+      <button class="btn-ghost" id="detailAllBtn">查看其他类型</button>
+    </div>
+  `;
+
+  el('detailAllBtn').addEventListener('click', () => show('types'));
+}
+
+/* =========================================================
+   流程控制
+   ========================================================= */
+function show(name){
+  Object.values(screens).forEach(s => s.classList.remove('active'));
+  screens[name].classList.add('active');
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
+
+function startQuiz(){
+  state.i = 0;
+  state.answers = new Array(TOTAL).fill(null);
+  state.locked = false;
+  show('quiz');
+  renderQuestion();
+}
+
+function renderQuestion(){
+  const i = state.i;
+  const q = QUESTIONS[i];
+
+  qText.textContent = q.text;
+  qNo.textContent = i + 1;
+  qIndex.textContent = i + 1;
+  progressFill.style.width = ((i + 1) / TOTAL * 100) + '%';
+  backBtn.disabled = i === 0;
+
+  optionsBox.innerHTML = '';
+  const opts = [
+    { badge:'A', text:q.a, val:q.aVal },
+    { badge:'B', text:q.b, val:q.bVal }
+  ];
+
+  opts.forEach((o, idx) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'option' + (state.answers[i] === o.val ? ' chosen' : '');
+    btn.innerHTML = `<span class="opt-badge">${o.badge}</span><span>${o.text}</span>`;
+    btn.addEventListener('click', () => choose(idx));
+    optionsBox.appendChild(btn);
+  });
+
+  state.locked = false;
+}
+
+function choose(idx){
+  if (state.locked) return;
+  state.locked = true;
+
+  const q = QUESTIONS[state.i];
+  const val = idx === 0 ? q.aVal : q.bVal;
+  state.answers[state.i] = val;
+
+  const btns = optionsBox.querySelectorAll('.option');
+  btns.forEach(b => b.classList.remove('chosen'));
+  btns[idx].classList.add('chosen');
+
+  setTimeout(() => {
+    if (state.i < TOTAL - 1) {
+      state.i++;
+      renderQuestion();
+    } else {
+      finish();
+    }
+  }, 280);
+}
+
+function goBack(){
+  if (state.i === 0 || state.locked) return;
+  state.i--;
+  renderQuestion();
+}
+
+function finish(){
+  progressFill.style.width = '100%';
+  setTimeout(() => {
+    renderResult();
+    show('result');
+  }, 320);
+}
+
+/* =========================================================
+   结果计算与渲染
+   ========================================================= */
+function renderResult(){
+  const counts = { E:0, I:0, S:0, N:0, T:0, F:0, J:0, P:0 };
+  state.answers.forEach(v => { if (v) counts[v]++; });
+
+  const type =
+    (counts.E >= counts.I ? 'E' : 'I') +
+    (counts.S >= counts.N ? 'S' : 'N') +
+    (counts.T >= counts.F ? 'T' : 'F') +
+    (counts.J >= counts.P ? 'J' : 'P');
+
+  const info = TYPES[type];
+  const g = GROUP[GROUP_KEY[type]];
+
+  const pct = (a, b) => Math.round(counts[a] / (counts[a] + counts[b]) * 100);
+  const pE = pct('E','I'), pS = pct('S','N'), pT = pct('T','F'), pJ = pct('J','P');
+
+  const DIMCONF = [
+    { la:'外向 E', lb:'内向 I', pa:pE, ca:'#f59e0b', cb:'#6366f1' },
+    { la:'实感 S', lb:'直觉 N', pa:pS, ca:'#10b981', cb:'#a78bfa' },
+    { la:'思考 T', lb:'情感 F', pa:pT, ca:'#3b82f6', cb:'#f472b6' },
+    { la:'判断 J', lb:'感知 P', pa:pJ, ca:'#06b6d4', cb:'#f59e0b' }
+  ];
+
+  const dimsHTML = DIMCONF.map(d => {
+    const pb = 100 - d.pa;
+    const start = Math.max(0, d.pa - 5);
+    const end = Math.min(100, d.pa + 5);
+    return `
+      <div class="dim">
+        <div class="dim-labels">
+          <span class="${d.pa >= pb ? 'win' : ''}">${d.la} · ${d.pa}%</span>
+          <span class="${pb > d.pa ? 'win' : ''}">${pb}% · ${d.lb}</span>
+        </div>
+        <div class="dim-track" style="background:linear-gradient(90deg,${d.ca} 0%,${d.ca} ${start}%,${d.cb} ${end}%,${d.cb} 100%)"></div>
+      </div>`;
+  }).join('');
+
+  const wrap = el('resultWrap');
+  wrap.style.setProperty('--c1', g.c1);
+  wrap.style.setProperty('--c2', g.c2);
+
+  wrap.innerHTML = `
+    <div class="result-hero">
+      <div class="type-code">${type}</div>
+      <div class="type-name">${info.name}</div>
+      <p class="type-tagline">${info.tagline}</p>
+    </div>
+
+    <div class="panel">
+      <h3>维度倾向</h3>
+      ${dimsHTML}
+    </div>
+
+    ${typePanelHTML(info, '关于你')}
+
+    <div class="actions">
+      <button class="btn-primary" id="retryBtn">重新测试</button>
+      <button class="btn-ghost" id="allTypesBtn">查看全部人格</button>
+      <button class="btn-ghost" id="homeBtn">返回首页</button>
+    </div>
+  `;
+
+  el('retryBtn').addEventListener('click', startQuiz);
+  el('allTypesBtn').addEventListener('click', () => show('types'));
+  el('homeBtn').addEventListener('click', () => show('intro'));
+}
+
+/* =========================================================
+   事件绑定
+   ========================================================= */
+el('startBtn').addEventListener('click', startQuiz);
+backBtn.addEventListener('click', goBack);
+
+document.addEventListener('keydown', e => {
+  if (!screens.quiz.classList.contains('active')) return;
+  if (e.key === '1' || e.key === '2') {
+    const btns = optionsBox.querySelectorAll('.option');
+    const idx = e.key === '1' ? 0 : 1;
+    if (btns[idx]) btns[idx].click();
+  }
+  if (e.key === 'ArrowLeft') goBack();
+});
+</script>
+</body>
+</html>
